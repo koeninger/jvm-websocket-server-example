@@ -20,7 +20,7 @@ import io.undertow.Handlers.path
 import io.undertow.Handlers.websocket
 
 object ExampleWebsocketServer {
-  val passbacks = new AtomicLong(0)
+  val metrics = new AtomicLong(0)
 
   val peers = new AtomicReference[ju.Set[WebSocketChannel]](new ju.HashSet[WebSocketChannel]())
 
@@ -42,7 +42,7 @@ object ExampleWebsocketServer {
         }))
         .addPrefixPath("/update", new HttpHandler() {
           override def handleRequest(exchange: HttpServerExchange): Unit = {
-            val data = s"""[{"adslot": 23, "passbacks": ${passbacks.incrementAndGet}}, {"adslot": 66, "passbacks":0}]"""
+            val data = s"""[{"id": 23, "metrics": ${metrics.incrementAndGet}}, {"id": 66, "metrics":0}]"""
             peers.get.asScala.foreach { peer =>
               WebSockets.sendText(data, peer, null)
             }
