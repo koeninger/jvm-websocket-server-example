@@ -24,6 +24,13 @@ object ExampleWebsocketServer {
 
   val peers = new AtomicReference[ju.Set[WebSocketChannel]](new ju.HashSet[WebSocketChannel]())
 
+  def sendLatest: Unit = {
+    val data = s"""[{"id": 23.6, "name": "bob", "metrics": ${metrics.incrementAndGet}}, {"id": 66.7, "name": "ted", "metrics":0}]"""
+    peers.get.asScala.foreach { peer =>
+      WebSockets.sendText(data, peer, null)
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     val server: Undertow = Undertow.builder()
       .addHttpListener(8080, "localhost")
@@ -33,6 +40,7 @@ object ExampleWebsocketServer {
             if (peers.get.isEmpty) {
               peers.set(exchange.getPeerConnections)
             }
+            sendLatest
             channel.getReceiveSetter().set(new AbstractReceiveListener() {
               override def onFullTextMessage(channel: WebSocketChannel, message: BufferedTextMessage): Unit = {
               }
@@ -42,10 +50,7 @@ object ExampleWebsocketServer {
         }))
         .addPrefixPath("/update", new HttpHandler() {
           override def handleRequest(exchange: HttpServerExchange): Unit = {
-            val data = s"""[{"id": 23, "metrics": ${metrics.incrementAndGet}}, {"id": 66, "metrics":0}]"""
-            peers.get.asScala.foreach { peer =>
-              WebSockets.sendText(data, peer, null)
-            }
+            sendLatest
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
             exchange.getResponseSender().send("updating");
           }
